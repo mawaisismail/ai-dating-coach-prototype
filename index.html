@@ -1,78 +1,243 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Dating Coach: Prototype</title>
-<style>
-:root{--bg:#0f0d17;--card:#1a1626;--line:#2c2540;--txt:#f3effa;--mute:#a49cb8;--pink:#ff4f8b;--violet:#8b5cf6;--ok:#34d399}
-[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#3b1d4f 0,transparent 60%),var(--bg);color:var(--txt);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
-header{display:flex;align-items:center;gap:12px;padding:14px 16px;max-width:1000px;margin:auto}
-.logo{font-weight:800;font-size:20px}.logo b{background:linear-gradient(90deg,var(--pink),var(--violet));-webkit-background-clip:text;color:transparent}
-.sp{flex:1}.pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#2a2140;color:var(--mute)}
-button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:#2a2140;color:var(--txt)}
-.cta{background:linear-gradient(90deg,var(--pink),var(--violet));font-weight:700}
-main{max-width:1000px;margin:auto;padding:8px 16px 60px}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.tabs button.on{background:var(--txt);color:#120f1c;font-weight:700}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
-.drop{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--mute);cursor:pointer}
-.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.thumbs img{width:80px;height:100px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
-.score{font-size:42px;font-weight:800}.bar{height:8px;background:#2a2140;border-radius:6px;overflow:hidden;margin:4px 0 10px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--violet))}
-ul{padding-left:18px;margin:6px 0}.mute{color:var(--mute);font-size:13px}
-.chat{height:380px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
-.m{max-width:80%;padding:10px 12px;border-radius:14px}.u{align-self:flex-end;background:var(--violet)}.a{align-self:flex-start;background:#2a2140}
-.row{display:flex;gap:8px;margin-top:10px}input,textarea{flex:1;background:#120f1c;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font:inherit}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:760px){.plans{grid-template-columns:1fr}}
-.plan h3{margin:0}.price{font-size:30px;font-weight:800;margin:6px 0}.feat{border-color:var(--pink)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:9}.modal.on{display:grid}.modal .card{width:min(380px,92vw)}
-.note{font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:14px}
-.typing::after{content:'▍';animation:b 1s infinite}@keyframes b{50%{opacity:0}}
-</style></head><body>
-<header><div class="logo">Spark<b>Coach</b> AI</div><span class="pill" id="plan">Free plan · 3 analyses left</span><div class="sp"></div><button id="loginBtn" onclick="openLogin()">Log in</button><button class="cta" onclick="tab('pricing')">Upgrade</button></header>
-<main>
-<div class="note">Prototype: AI responses here are simulated sample outputs. In the real build each tool sends your existing prompts plus the user's images/text to OpenAI (GPT-4o vision) from a secure server, and accounts and subscriptions run on Stripe.</div>
-<div class="tabs"><button data-t="profile" class="on" onclick="tab('profile')">📸 Profile Analyzer</button><button data-t="convo" onclick="tab('convo')">💬 Conversation Analyzer</button><button data-t="coach" onclick="tab('coach')">🧠 AI Coach</button><button data-t="pricing" onclick="tab('pricing')">💳 Plans</button></div>
-
-<section id="profile" class="grid">
- <div class="card"><h3>Upload your dating profile</h3><p class="mute">Photos + bio screenshots from Hinge, Tinder, Bumble…</p>
- <label class="drop">Drop or tap to upload images<input type="file" accept="image/*" multiple hidden onchange="preview(this,'pThumbs')"></label><div class="thumbs" id="pThumbs"></div>
- <div class="row"><button class="cta" style="flex:1" onclick="analyze('pOut',PROFILE)">Analyze my profile</button></div></div>
- <div class="card" id="pOut"><p class="mute">Your personalised feedback will appear here.</p></div>
-</section>
-
-<section id="convo" class="grid" hidden>
- <div class="card"><h3>Upload a conversation</h3><p class="mute">Screenshots of a chat you want help with.</p>
- <label class="drop">Drop or tap to upload screenshots<input type="file" accept="image/*" multiple hidden onchange="preview(this,'cThumbs')"></label><div class="thumbs" id="cThumbs"></div>
- <div class="row"><textarea id="ctx" rows="2" placeholder="Optional context: 'We matched 2 days ago, she stopped replying…'"></textarea></div>
- <div class="row"><button class="cta" style="flex:1" onclick="analyze('cOut',CONVO)">Analyze conversation</button></div></div>
- <div class="card" id="cOut"><p class="mute">Feedback and suggested replies will appear here.</p></div>
-</section>
-
-<section id="coach" class="card" hidden>
- <h3 style="margin-top:0">Your AI dating coach</h3><div class="chat" id="chat"><div class="m a">Hey! I'm your coach, trained on our coaching framework. What's going on in your dating life right now?</div></div>
- <div class="row"><input id="msg" placeholder="Ask anything: first-date ideas, how to text after a date…" onkeydown="if(event.key==='Enter')send()"><button class="cta" onclick="send()">Send</button></div>
- <div class="row" style="flex-wrap:wrap"><button onclick="quick(this)">How do I open on Hinge?</button><button onclick="quick(this)">She left me on read</button><button onclick="quick(this)">Plan a great first date</button></div>
-</section>
-
-<section id="pricing" hidden><div class="plans">
- <div class="card plan"><h3>Free</h3><div class="price">$0</div><ul><li>3 analyses</li><li>10 coach messages</li></ul><button disabled>Current plan</button></div>
- <div class="card plan feat"><h3>Pro</h3><div class="price">$19<span class="mute">/mo</span></div><ul><li>Unlimited profile &amp; chat analyses</li><li>Unlimited AI coach</li><li>Saved history</li></ul><button class="cta" onclick="checkout('Pro')">Start Pro</button></div>
- <div class="card plan"><h3>VIP</h3><div class="price">$49<span class="mute">/mo</span></div><ul><li>Everything in Pro</li><li>Priority responses</li><li>Monthly human coach review</li></ul><button onclick="checkout('VIP')">Go VIP</button></div>
-</div><p class="mute">Real build: Stripe Checkout and Customer Portal, with webhooks to activate, renew and cancel plans and enforce usage limits.</p></section>
-</main>
-
-<div class="modal" id="login"><div class="card"><h3 style="margin-top:0">Log in</h3><div style="display:grid;gap:8px"><input id="em" placeholder="Email"><input type="password" placeholder="Password"><button class="cta" onclick="doLogin()">Continue</button><button onclick="doLogin()">Continue with Google</button></div><p class="mute">Prototype: any email works.</p></div></div>
-
+<html lang="en" class="h-full">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spark: AI Dating Coach</title>
+<meta name="description" content="AI dating coach: profile analyzer, conversation analyzer and a 24/7 coach, powered by your proven coaching method." />
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.10"></script>
 <script>
-const PROFILE={score:72,title:"Profile score",sections:[["What's working",["Photo 2 (outdoor, natural smile) is your strongest. Lead with it","Bio shows humour and a specific interest (hiking)"]],["Fix these first",["Photo 1 is a group shot, so it's unclear who you are. Move it to slot 4","No full-body photo. Add one in natural light","Bio ends without a hook. Give matches an easy opener"]],["Rewrite suggestion",["\"Weekend hiker, weekday taco critic. Tell me your most controversial food opinion 🌮\""]]]};
-const CONVO={score:58,title:"Conversation health",sections:[["What happened",["Your last 3 messages were questions in a row, which feels like an interview","Energy dropped after the 'what do you do' exchange"]],["Suggested replies",["\"Okay, I need a ruling: is pineapple on pizza a red flag or a green flag? 🍍\"","\"You mentioned the Lisbon trip. What's the one place I absolutely have to go?\""]],["Next step",["Suggest a specific plan within the next 2–3 messages: 'Coffee Thursday at 6?'"]]]};
-function tab(t){document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!==t);document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
-function preview(inp,id){const el=document.getElementById(id);el.innerHTML='';[...inp.files].slice(0,6).forEach(f=>{const i=new Image();i.src=URL.createObjectURL(f);el.appendChild(i)})}
-let left=3;function analyze(id,R){const o=document.getElementById(id);if(left<=0){tab('pricing');return}left--;document.getElementById('plan').textContent=`Free plan · ${left} analyses left`;o.innerHTML='<p class="typing mute">Analyzing with your coaching prompts</p>';setTimeout(()=>{o.innerHTML=`<div class="mute">${R.title}</div><div class="score">${R.score}<span class="mute">/100</span></div><div class="bar"><i style="width:${R.score}%"></i></div>`+R.sections.map(([h,l])=>`<b>${h}</b><ul>${l.map(x=>`<li>${x}</li>`).join('')}</ul>`).join('')},1400)}
-const ANS={"hinge":"On Hinge, comment on a specific prompt or photo detail instead of just liking. Example: 'Okay, your hot take on brunch is wrong and I can prove it 😄'. Specific beats generic every time.","read":"Being left on read usually means low momentum, not rejection. Wait 2–3 days, then send one light, playful message that doesn't reference the silence. If there's no reply, let it go gracefully.","date":"Pick something short, specific and easy to extend: coffee plus a walk, or a casual bar with games. Propose a day and time ('Thursday 7pm at X?') instead of 'let's hang out sometime'."};
-function reply(q){q=q.toLowerCase();return q.includes('hinge')||q.includes('open')?ANS.hinge:q.includes('read')||q.includes('reply')?ANS.read:q.includes('date')?ANS.date:"Great question. In the real app I'd answer using your coaching framework. Tell me a bit more about the situation (where you met, how long you've been talking) and I'll give you a specific next step."}
-function send(){const i=document.getElementById('msg'),c=document.getElementById('chat');if(!i.value.trim())return;c.insertAdjacentHTML('beforeend',`<div class="m u">${i.value.replace(/</g,'&lt;')}</div>`);const q=i.value;i.value='';const a=document.createElement('div');a.className='m a typing';c.appendChild(a);c.scrollTop=1e9;setTimeout(()=>{a.className='m a';a.textContent=reply(q);c.scrollTop=1e9},900)}
-function quick(b){document.getElementById('msg').value=b.textContent;send()}
-function openLogin(){document.getElementById('login').classList.add('on')}
-function doLogin(){const e=document.getElementById('em').value||'demo@user.com';document.getElementById('login').classList.remove('on');document.getElementById('loginBtn').textContent=e.split('@')[0]}
-function checkout(p){alert(`Prototype: this opens Stripe Checkout for the ${p} plan. After payment, a webhook unlocks unlimited usage.`)}
-document.getElementById('login').onclick=e=>{if(e.target.id==='login')e.target.classList.remove('on')}
-</script></body></html>
+tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','ui-sans-serif','system-ui'],serif:['"Instrument Serif"','serif']},colors:{ink:'#0B0B12',rose:{450:'#F0446E'}},boxShadow:{glow:'0 10px 40px -10px rgba(240,68,110,.45)',card:'0 1px 0 rgba(255,255,255,.04) inset, 0 20px 50px -20px rgba(0,0,0,.6)'}}}}
+</script>
+<style>
+body{background:#0B0B12}
+.grain:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+.glass{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(14px)}
+.grad{background:linear-gradient(135deg,#F0446E 0%,#A855F7 55%,#6366F1 100%)}
+.gradtext{background:linear-gradient(90deg,#FF7A9C,#C084FC);-webkit-background-clip:text;color:transparent}
+.ring-track{stroke:rgba(255,255,255,.08)}.ring-val{transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.fade{animation:fade .45s ease both}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.shimmer{background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.12),rgba(255,255,255,.04));background-size:200% 100%;animation:sh 1.2s infinite}@keyframes sh{to{background-position:-200% 0}}
+.caret:after{content:"";display:inline-block;width:7px;height:14px;margin-left:2px;background:#C084FC;vertical-align:-2px;animation:bl 1s steps(1) infinite}@keyframes bl{50%{opacity:0}}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body class="h-full text-zinc-100 font-sans antialiased grain">
+
+<!-- ============ LANDING ============ -->
+<div id="landing">
+  <div class="absolute inset-x-0 top-0 h-[620px] overflow-hidden -z-0 pointer-events-none">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full opacity-30 blur-3xl grad"></div>
+  </div>
+  <header class="relative z-10 max-w-6xl mx-auto px-5 py-5 flex items-center gap-3">
+    <div class="flex items-center gap-2 font-extrabold text-lg"><span class="w-8 h-8 rounded-xl grad grid place-items-center shadow-glow"><i data-lucide="sparkles" class="w-4 h-4"></i></span>Spark</div>
+    <nav class="hidden md:flex gap-6 ml-8 text-sm text-zinc-400"><a href="#how" class="hover:text-white">How it works</a><a href="#pricing" class="hover:text-white">Pricing</a><a href="#faq" class="hover:text-white">FAQ</a></nav>
+    <div class="flex-1"></div>
+    <button onclick="openApp()" class="text-sm text-zinc-300 hover:text-white px-3 py-2">Log in</button>
+    <button onclick="openApp()" class="text-sm font-semibold px-4 py-2 rounded-xl bg-white text-ink hover:bg-zinc-200">Get started free</button>
+  </header>
+
+  <section class="relative z-10 max-w-6xl mx-auto px-5 pt-10 pb-20 grid lg:grid-cols-2 gap-12 items-center">
+    <div class="fade">
+      <div class="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full glass text-zinc-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Built on a coaching method used by 10,000+ clients</div>
+      <h1 class="mt-5 text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.02]">Get more matches.<br><span class="font-serif italic font-normal gradtext">Have better dates.</span></h1>
+      <p class="mt-5 text-lg text-zinc-400 max-w-xl">Upload your dating profile or a conversation and get expert feedback in seconds, from an AI coach trained on our proven relationship-coaching framework.</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <button onclick="openApp('profile')" class="grad shadow-glow px-5 py-3 rounded-xl font-semibold flex items-center gap-2"><i data-lucide="scan-face" class="w-4 h-4"></i>Analyze my profile, free</button>
+        <button onclick="openApp('coach')" class="glass px-5 py-3 rounded-xl font-semibold flex items-center gap-2"><i data-lucide="message-circle-heart" class="w-4 h-4"></i>Talk to the coach</button>
+      </div>
+      <div class="mt-8 flex items-center gap-4 text-sm text-zinc-400">
+        <div class="flex -space-x-2"><span class="w-8 h-8 rounded-full border-2 border-ink bg-gradient-to-br from-amber-300 to-rose-400"></span><span class="w-8 h-8 rounded-full border-2 border-ink bg-gradient-to-br from-sky-300 to-indigo-500"></span><span class="w-8 h-8 rounded-full border-2 border-ink bg-gradient-to-br from-emerald-300 to-teal-500"></span><span class="w-8 h-8 rounded-full border-2 border-ink bg-gradient-to-br from-fuchsia-300 to-purple-500"></span></div>
+        <div><div class="text-amber-300">★★★★★</div>4.9 from 2,400+ members</div>
+      </div>
+    </div>
+
+    <!-- phone mockup -->
+    <div class="relative mx-auto fade" style="animation-delay:.1s">
+      <div class="absolute -inset-10 grad opacity-20 blur-3xl rounded-full"></div>
+      <div class="relative w-[300px] h-[610px] rounded-[44px] bg-zinc-900 border border-white/10 shadow-card p-3">
+        <div class="h-full rounded-[34px] bg-ink overflow-hidden relative">
+          <div class="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-6 rounded-full bg-black"></div>
+          <div class="pt-12 px-4">
+            <div class="text-xs text-zinc-500">Profile score</div>
+            <div class="flex items-center gap-4 mt-2">
+              <svg width="86" height="86" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke-width="10" class="ring-track"/><circle cx="50" cy="50" r="42" fill="none" stroke-width="10" stroke="url(#g1)" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="58" transform="rotate(-90 50 50)"/><defs><linearGradient id="g1"><stop offset="0" stop-color="#F0446E"/><stop offset="1" stop-color="#A855F7"/></linearGradient></defs><text x="50" y="57" text-anchor="middle" fill="white" font-size="24" font-weight="800">78</text></svg>
+              <div class="text-sm"><div class="font-semibold">Good. Top 30%</div><div class="text-zinc-400 text-xs">3 quick fixes could get you to 90+</div></div>
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-2">
+              <div class="aspect-[3/4] rounded-xl bg-gradient-to-br from-amber-200 via-rose-300 to-rose-500 relative"><span class="absolute top-1 left-1 text-[10px] px-1.5 rounded bg-emerald-500/90">Best</span></div>
+              <div class="aspect-[3/4] rounded-xl bg-gradient-to-br from-sky-200 via-indigo-300 to-indigo-600 relative"><span class="absolute top-1 left-1 text-[10px] px-1.5 rounded bg-amber-500/90">Move</span></div>
+              <div class="aspect-[3/4] rounded-xl bg-gradient-to-br from-zinc-400 to-zinc-700 relative"><span class="absolute top-1 left-1 text-[10px] px-1.5 rounded bg-rose-500/90">Remove</span></div>
+            </div>
+            <div class="mt-4 space-y-2 text-xs">
+              <div class="glass rounded-xl p-3"><div class="font-semibold text-emerald-300 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i>Lead with photo 1</div><div class="text-zinc-400 mt-0.5">Natural smile, eye contact, good light.</div></div>
+              <div class="glass rounded-xl p-3"><div class="font-semibold text-rose-300 flex items-center gap-1"><i data-lucide="x" class="w-3 h-3"></i>Group photo hides you</div><div class="text-zinc-400 mt-0.5">Swap for a solo full-body shot.</div></div>
+              <div class="glass rounded-xl p-3"><div class="font-semibold text-violet-300 flex items-center gap-1"><i data-lucide="wand-sparkles" class="w-3 h-3"></i>New bio opener</div><div class="text-zinc-400 mt-0.5">"Weekend hiker, weekday taco critic…"</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="relative z-10 max-w-6xl mx-auto px-5 pb-20">
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="glass rounded-2xl p-6"><div class="w-10 h-10 rounded-xl grad grid place-items-center"><i data-lucide="scan-face" class="w-5 h-5"></i></div><h3 class="mt-4 font-semibold text-lg">Profile Analyzer</h3><p class="text-sm text-zinc-400 mt-1">Upload photos and prompts from Hinge, Tinder or Bumble. Get a score, per-photo verdicts and a rewritten bio.</p></div>
+      <div class="glass rounded-2xl p-6"><div class="w-10 h-10 rounded-xl grad grid place-items-center"><i data-lucide="messages-square" class="w-5 h-5"></i></div><h3 class="mt-4 font-semibold text-lg">Conversation Analyzer</h3><p class="text-sm text-zinc-400 mt-1">Drop in chat screenshots. See where the energy dropped and get replies that move it toward a date.</p></div>
+      <div class="glass rounded-2xl p-6"><div class="w-10 h-10 rounded-xl grad grid place-items-center"><i data-lucide="heart-handshake" class="w-5 h-5"></i></div><h3 class="mt-4 font-semibold text-lg">24/7 AI Coach</h3><p class="text-sm text-zinc-400 mt-1">Ask anything, from first-date ideas to "what do I text now?", answered with our coaching framework.</p></div>
+    </div>
+  </section>
+
+  <section id="pricing" class="relative z-10 max-w-6xl mx-auto px-5 pb-24">
+    <h2 class="text-3xl md:text-4xl font-extrabold text-center">Simple pricing</h2><p class="text-center text-zinc-400 mt-2">Start free. Upgrade when you see results.</p>
+    <div id="plansLanding" class="mt-10 grid md:grid-cols-3 gap-4"></div>
+  </section>
+
+  <section id="faq" class="relative z-10 max-w-3xl mx-auto px-5 pb-24 space-y-3">
+    <h2 class="text-3xl font-extrabold text-center mb-6">FAQ</h2>
+    <details class="glass rounded-xl p-4"><summary class="font-semibold cursor-pointer">Are my photos private?</summary><p class="text-sm text-zinc-400 mt-2">Uploads are processed securely, never shown publicly, and you can delete them any time from History.</p></details>
+    <details class="glass rounded-xl p-4"><summary class="font-semibold cursor-pointer">Is this generic ChatGPT advice?</summary><p class="text-sm text-zinc-400 mt-2">No. Every analysis follows our coaching framework and scoring rubric, the same method our human coaches use.</p></details>
+    <details class="glass rounded-xl p-4"><summary class="font-semibold cursor-pointer">Can I cancel anytime?</summary><p class="text-sm text-zinc-400 mt-2">Yes. Manage or cancel your plan in one click from Billing.</p></details>
+  </section>
+  <footer class="relative z-10 border-t border-white/5 py-8 text-center text-xs text-zinc-500">© 2026 Spark · Clickable prototype by Muhammad Awais · AI output in this demo is pre-written sample content</footer>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden class="h-full flex">
+  <aside class="hidden md:flex w-64 shrink-0 flex-col border-r border-white/5 p-4 gap-1 bg-black/20">
+    <button onclick="closeApp()" class="flex items-center gap-2 font-extrabold text-lg px-2 py-2"><span class="w-8 h-8 rounded-xl grad grid place-items-center"><i data-lucide="sparkles" class="w-4 h-4"></i></span>Spark</button>
+    <div class="mt-4 text-[11px] uppercase tracking-wider text-zinc-500 px-2">Tools</div>
+    <nav id="side" class="flex flex-col gap-1 mt-1"></nav>
+    <div class="flex-1"></div>
+    <div class="glass rounded-2xl p-4">
+      <div class="text-sm font-semibold">Free plan</div>
+      <div class="text-xs text-zinc-400 mt-1"><span id="usage">1</span> of 3 analyses used</div>
+      <div class="h-1.5 rounded-full bg-white/10 mt-2 overflow-hidden"><div id="usageBar" class="h-full grad" style="width:33%"></div></div>
+      <button onclick="go('billing')" class="mt-3 w-full grad rounded-xl py-2 text-sm font-semibold">Upgrade to Pro</button>
+    </div>
+    <div class="flex items-center gap-3 px-2 pt-3"><span class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 to-rose-500"></span><div class="text-sm leading-tight"><div class="font-medium">Alex</div><div class="text-xs text-zinc-500">alex@email.com</div></div></div>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto">
+    <div class="md:hidden flex items-center gap-2 p-3 border-b border-white/5 overflow-x-auto" id="mobileNav"></div>
+    <div class="max-w-5xl mx-auto p-5 md:p-8" id="view"></div>
+  </main>
+</div>
+
+<!-- checkout modal -->
+<div id="checkout" hidden class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm grid place-items-center p-4">
+  <div class="w-full max-w-md rounded-2xl bg-white text-zinc-900 overflow-hidden fade">
+    <div class="p-5 border-b flex items-center justify-between"><div class="font-semibold">Spark <span id="coPlan">Pro</span></div><button onclick="hide('checkout')" class="text-zinc-400 hover:text-zinc-900"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <div class="p-5 space-y-3 text-sm">
+      <div class="flex justify-between"><span>Subscription</span><b id="coPrice">$19.00 / month</b></div>
+      <label class="block">Email<input class="mt-1 w-full border rounded-lg px-3 py-2" value="alex@email.com"></label>
+      <label class="block">Card information<div class="mt-1 border rounded-lg px-3 py-2 text-zinc-400">4242 4242 4242 4242 · 12/34 · 123</div></label>
+      <button onclick="paid()" class="w-full rounded-lg py-3 font-semibold text-white" style="background:#635BFF">Subscribe</button>
+      <p class="text-xs text-zinc-500 text-center">Stripe test-mode preview. The live build uses Stripe Checkout and Customer Portal with webhooks.</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-white text-ink text-sm font-medium shadow-lg transition opacity-0 pointer-events-none"></div>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const NAV=[["profile","scan-face","Profile Analyzer"],["convo","messages-square","Conversation Analyzer"],["coach","heart-handshake","AI Coach"],["history","history","History"],["billing","credit-card","Billing"]];
+const PLANS=[{n:"Free",p:0,f:["3 analyses","10 coach messages","Basic score"],c:"Current plan"},{n:"Pro",p:19,f:["Unlimited profile & chat analyses","Unlimited AI coach","Photo-by-photo verdicts","Saved history"],c:"Start Pro",hot:1},{n:"VIP",p:49,f:["Everything in Pro","Priority, deeper analysis","Monthly review by a human coach"],c:"Go VIP"}];
+let used=1,pro=false,history=[{t:"Profile",s:78,d:"Today, 9:41"},{t:"Conversation",s:61,d:"Yesterday"}];
+const icons=()=>window.lucide&&lucide.createIcons();
+function toast(t){const e=$("#toast");e.textContent=t;e.style.opacity=1;setTimeout(()=>e.style.opacity=0,2000)}
+function hide(id){$("#"+id).hidden=true}
+function planCards(el,inApp){el.innerHTML=PLANS.map(p=>`<div class="rounded-2xl p-6 ${p.hot?'grad p-[1px]':''}"><div class="${p.hot?'bg-ink rounded-2xl p-6 -m-[1px] h-full':'glass rounded-2xl p-6 -m-6 h-[calc(100%+3rem)]'}">
+ <div class="flex items-center justify-between"><h3 class="font-semibold text-lg">${p.n}</h3>${p.hot?'<span class="text-[11px] px-2 py-0.5 rounded-full grad">Most popular</span>':''}</div>
+ <div class="mt-3 text-4xl font-extrabold">$${p.p}<span class="text-base font-medium text-zinc-500">/mo</span></div>
+ <ul class="mt-4 space-y-2 text-sm text-zinc-300">${p.f.map(x=>`<li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400 mt-0.5"></i>${x}</li>`).join('')}</ul>
+ <button ${p.p===0?'disabled':''} onclick="${inApp?`checkout('${p.n}',${p.p})`:`openApp('billing')`}" class="mt-6 w-full rounded-xl py-2.5 font-semibold ${p.hot?'grad':'bg-white/10 hover:bg-white/15'} ${p.p===0?'opacity-50':''}">${pro&&p.n==='Pro'?'Current plan':p.c}</button></div></div>`).join('');icons()}
+planCards($("#plansLanding"),false);
+
+function openApp(v='profile'){$("#landing").hidden=true;$("#app").hidden=false;go(v)}
+function closeApp(){$("#app").hidden=true;$("#landing").hidden=false;window.scrollTo(0,0)}
+function go(v){
+  const item=([k,i,l])=>`<button onclick="go('${k}')" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm ${k===v?'bg-white/10 text-white':'text-zinc-400 hover:text-white hover:bg-white/5'}"><i data-lucide="${i}" class="w-4 h-4"></i>${l}</button>`;
+  $("#side").innerHTML=NAV.map(item).join('');$("#mobileNav").innerHTML=NAV.map(([k,i,l])=>`<button onclick="go('${k}')" class="shrink-0 text-xs px-3 py-1.5 rounded-full ${k===v?'bg-white text-ink':'bg-white/10'}">${l}</button>`).join('');
+  ({profile:vProfile,convo:vConvo,coach:vCoach,history:vHistory,billing:vBilling})[v]();icons();$("main").scrollTop=0}
+function head(t,s){return `<div class="mb-6"><h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">${t}</h1><p class="text-zinc-400 mt-1">${s}</p></div>`}
+function usage(){if(!pro&&used>=3){checkout('Pro',19);return false}used++;$("#usage").textContent=Math.min(used,3);$("#usageBar").style.width=Math.min(used,3)/3*100+'%';return true}
+
+/* ---------- Profile ---------- */
+const SAMPLE_PHOTOS=[["from-amber-200 via-rose-300 to-rose-500","Outdoor, natural smile"],["from-zinc-300 to-zinc-600","Group photo"],["from-sky-200 via-indigo-300 to-indigo-600","Mirror selfie"],["from-emerald-200 to-teal-600","Hiking, full body"]];
+let photos=[];
+function vProfile(){
+  $("#view").innerHTML=head("Profile Analyzer","Upload your photos and prompts. Get a score, per-photo verdicts and a rewritten bio.")+`
+  <div class="grid lg:grid-cols-5 gap-5">
+   <div class="lg:col-span-2 space-y-4">
+    <label class="block glass rounded-2xl p-6 text-center cursor-pointer hover:bg-white/5 transition border-dashed">
+      <input type="file" accept="image/*" multiple hidden onchange="addPhotos(this.files)">
+      <div class="w-12 h-12 mx-auto rounded-2xl grad grid place-items-center"><i data-lucide="image-plus" class="w-5 h-5"></i></div>
+      <div class="mt-3 font-semibold">Drop photos or screenshots</div><div class="text-xs text-zinc-500 mt-1">JPG, PNG · up to 9 images</div>
+    </label>
+    <button onclick="sample()" class="w-full text-sm glass rounded-xl py-2.5 hover:bg-white/10">Use a sample profile</button>
+    <div id="thumbs" class="grid grid-cols-4 gap-2"></div>
+    <textarea id="bio" rows="3" placeholder="Paste your bio or prompts (optional)" class="w-full glass rounded-xl p-3 text-sm outline-none focus:ring-2 ring-violet-500/50"></textarea>
+    <button onclick="runProfile()" class="w-full grad shadow-glow rounded-xl py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i>Analyze profile</button>
+   </div>
+   <div class="lg:col-span-3" id="pOut"><div class="glass rounded-2xl p-10 text-center text-zinc-500 h-full grid place-items-center"><div><i data-lucide="scan-face" class="w-10 h-10 mx-auto opacity-40"></i><p class="mt-3">Your results will appear here</p></div></div></div>
+  </div>`;drawThumbs()}
+function addPhotos(fs){[...fs].slice(0,9).forEach(f=>photos.push({src:URL.createObjectURL(f)}));drawThumbs()}
+function sample(){photos=SAMPLE_PHOTOS.map(([g,l])=>({g,l}));$("#bio").value="Just a guy who likes hiking and good food. Ask me anything!";drawThumbs()}
+function drawThumbs(){const el=$("#thumbs");if(!el)return;el.innerHTML=photos.map((p,i)=>`<div class="aspect-[3/4] rounded-xl overflow-hidden relative ${p.g?'bg-gradient-to-br '+p.g:''}">${p.src?`<img src="${p.src}" class="w-full h-full object-cover">`:''}<span class="absolute bottom-1 left-1 text-[10px] px-1.5 rounded bg-black/60">${i+1}</span></div>`).join('')}
+function ring(score,size=120){const c=2*Math.PI*42,off=c*(1-score/100);return `<svg width="${size}" height="${size}" viewBox="0 0 100 100"><defs><linearGradient id="rg"><stop offset="0" stop-color="#F0446E"/><stop offset="1" stop-color="#A855F7"/></linearGradient></defs><circle cx="50" cy="50" r="42" fill="none" stroke-width="9" class="ring-track"/><circle class="ring-val" cx="50" cy="50" r="42" fill="none" stroke-width="9" stroke="url(#rg)" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c}" data-off="${off}" transform="rotate(-90 50 50)"/><text x="50" y="57" text-anchor="middle" fill="white" font-size="24" font-weight="800">${score}</text></svg>`}
+function animateRings(){requestAnimationFrame(()=>document.querySelectorAll('.ring-val').forEach(r=>r.style.strokeDashoffset=r.dataset.off))}
+function skeleton(id){$("#"+id).innerHTML=`<div class="glass rounded-2xl p-6 space-y-4"><div class="flex gap-4 items-center"><div class="w-[120px] h-[120px] rounded-full shimmer"></div><div class="flex-1 space-y-2"><div class="h-4 w-1/2 rounded shimmer"></div><div class="h-3 w-3/4 rounded shimmer"></div></div></div>${'<div class="h-16 rounded-xl shimmer"></div>'.repeat(3)}<p class="text-xs text-zinc-500 flex items-center gap-2"><i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>Applying your coaching rubric…</p></div>`;icons()}
+function runProfile(){if(!photos.length)sample();if(!usage())return;skeleton('pOut');setTimeout(()=>{
+  const verdicts=[["Best","emerald","Lead with this. Warm smile, eye contact and natural light. It signals approachability."],["Remove","rose","Group shots make matches guess who you are. Cut it or move it to the last slot."],["Replace","amber","Mirror selfies read as low-effort. Ask a friend for a candid in similar lighting."],["Keep","sky","Full-body plus an activity shows lifestyle. Move it to slot 2."]];
+  const ph=photos.slice(0,4);
+  $("#pOut").innerHTML=`<div class="space-y-4 fade">
+   <div class="glass rounded-2xl p-6 flex flex-wrap items-center gap-6">${ring(78)}<div class="flex-1 min-w-[200px]"><div class="text-sm text-zinc-400">Overall profile score</div><div class="text-xl font-bold">Good. Top 30% of profiles</div><div class="mt-3 space-y-2 text-sm">${[["Photos",72],["Bio & prompts",64],["First impression",85]].map(([l,v])=>`<div><div class="flex justify-between text-xs text-zinc-400"><span>${l}</span><span>${v}</span></div><div class="h-1.5 rounded-full bg-white/10 mt-1"><div class="h-full rounded-full grad" style="width:${v}%"></div></div></div>`).join('')}</div></div></div>
+   <div class="glass rounded-2xl p-6"><div class="font-semibold mb-4">Photo-by-photo</div><div class="grid sm:grid-cols-2 gap-3">${ph.map((p,i)=>{const[v,c,t]=verdicts[i%4];return `<div class="flex gap-3 p-3 rounded-xl bg-white/[.03] border border-white/5"><div class="w-16 h-20 shrink-0 rounded-lg overflow-hidden ${p.g?'bg-gradient-to-br '+p.g:''}">${p.src?`<img src="${p.src}" class="w-full h-full object-cover">`:''}</div><div><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-${c}-500/15 text-${c}-300">${v}</span><p class="text-sm text-zinc-300 mt-1.5">${t}</p></div></div>`}).join('')}</div>
+    <div class="mt-4 text-sm flex items-center gap-2 text-zinc-300"><i data-lucide="arrow-down-up" class="w-4 h-4 text-violet-300"></i>Recommended order: <b>1 → 4 → 3</b> · remove 2</div></div>
+   <div class="glass rounded-2xl p-6"><div class="flex items-center justify-between"><div class="font-semibold">Bio rewrite</div><span class="text-xs text-zinc-500">3 options in your voice</span></div>
+    ${["Weekend hiker, weekday taco critic. Tell me your most controversial food opinion 🌮","I'll plan the hike, you pick the post-hike snack. Fair trade?","Looking for someone to split appetizers and summit sunsets with."].map(b=>`<div class="mt-3 flex items-start gap-3 p-3 rounded-xl bg-white/[.03] border border-white/5"><p class="flex-1 text-sm">${b}</p><button onclick="navigator.clipboard?.writeText(this.previousElementSibling.textContent);toast('Copied')" class="text-zinc-400 hover:text-white"><i data-lucide="copy" class="w-4 h-4"></i></button></div>`).join('')}</div>
+  </div>`;icons();animateRings();history.unshift({t:"Profile",s:78,d:"Just now"})},1600)}
+
+/* ---------- Conversation ---------- */
+function vConvo(){
+  $("#view").innerHTML=head("Conversation Analyzer","Upload chat screenshots. We'll show where it lost energy and what to send next.")+`
+  <div class="grid lg:grid-cols-5 gap-5"><div class="lg:col-span-2 space-y-4">
+   <label class="block glass rounded-2xl p-6 text-center cursor-pointer hover:bg-white/5"><input type="file" accept="image/*" multiple hidden onchange="toast(this.files.length+' screenshot(s) added')"><div class="w-12 h-12 mx-auto rounded-2xl grad grid place-items-center"><i data-lucide="upload" class="w-5 h-5"></i></div><div class="mt-3 font-semibold">Upload screenshots</div><div class="text-xs text-zinc-500 mt-1">We read the messages automatically</div></label>
+   <textarea id="ctx" rows="3" placeholder="Context: 'Matched 3 days ago, she stopped replying…'" class="w-full glass rounded-xl p-3 text-sm outline-none focus:ring-2 ring-violet-500/50"></textarea>
+   <div class="flex gap-2 text-xs">${["Flirty","Playful","Direct"].map((t,i)=>`<button onclick="this.parentNode.querySelectorAll('button').forEach(b=>b.className=b.className.replace('bg-white text-ink','bg-white/10'));this.className=this.className.replace('bg-white/10','bg-white text-ink')" class="px-3 py-1.5 rounded-full ${i==1?'bg-white text-ink':'bg-white/10'}">${t}</button>`).join('')}</div>
+   <button onclick="runConvo()" class="w-full grad shadow-glow rounded-xl py-3 font-semibold flex items-center justify-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i>Analyze conversation</button>
+  </div><div class="lg:col-span-3" id="cOut"><div class="glass rounded-2xl p-10 text-center text-zinc-500 grid place-items-center h-full"><div><i data-lucide="messages-square" class="w-10 h-10 mx-auto opacity-40"></i><p class="mt-3">Your analysis will appear here</p></div></div></div></div>`}
+function runConvo(){if(!usage())return;skeleton('cOut');setTimeout(()=>{
+  const msgs=[["them","haha that's so true, I love Lisbon too 😄",""],["you","Nice! What do you do for work?","q"],["them","I'm a product designer",""],["you","Cool. Do you like it?","q"],["them","yeah it's good",""],["you","What are your hobbies?","drop"]];
+  $("#cOut").innerHTML=`<div class="space-y-4 fade">
+   <div class="glass rounded-2xl p-6 flex flex-wrap items-center gap-6">${ring(61)}<div class="flex-1 min-w-[200px]"><div class="text-sm text-zinc-400">Conversation health</div><div class="text-xl font-bold">Losing momentum</div><p class="text-sm text-zinc-400 mt-1">Three questions in a row turned it into an interview. Her replies got shorter after message 3.</p></div></div>
+   <div class="glass rounded-2xl p-6"><div class="font-semibold mb-3">Message breakdown</div><div class="space-y-2">${msgs.map(([w,t,f])=>`<div class="flex ${w=='you'?'justify-end':''}"><div class="max-w-[80%]"><div class="px-3.5 py-2 rounded-2xl text-sm ${w=='you'?'bg-violet-600 rounded-br-md':'bg-white/10 rounded-bl-md'}">${t}</div>${f?`<div class="text-[11px] mt-1 ${w=='you'?'text-right':''} ${f=='drop'?'text-rose-300':'text-amber-300'}">${f=='drop'?'⚠ Energy drop: generic question':'• Interview-style question'}</div>`:''}</div></div>`).join('')}</div></div>
+   <div class="glass rounded-2xl p-6"><div class="font-semibold">Send one of these next</div>${[["Playful","Okay, as a designer you're legally required to judge my phone's home screen. Brutal honesty only 😅"],["Callback","You never told me your #1 Lisbon spot. I need it for my 'reasons to go back' list."],["Move to date","Honestly this would be more fun over coffee. Free Thursday around 6?"]].map(([t,m])=>`<div class="mt-3 p-3 rounded-xl bg-white/[.03] border border-white/5"><div class="text-[11px] text-violet-300 font-semibold">${t}</div><div class="flex gap-3 items-start mt-1"><p class="flex-1 text-sm">${m}</p><button onclick="navigator.clipboard?.writeText(this.previousElementSibling.textContent);toast('Copied')" class="text-zinc-400 hover:text-white"><i data-lucide="copy" class="w-4 h-4"></i></button></div></div>`).join('')}</div>
+  </div>`;icons();animateRings();history.unshift({t:"Conversation",s:61,d:"Just now"})},1600)}
+
+/* ---------- Coach ---------- */
+const COACH={hinge:"Great question. On Hinge, **likes without comments get ignored**. Pick one specific detail from a photo or prompt and react to it.\n\nTry: *\"Okay, your hot take on brunch is wrong and I can prove it 😄\"*\n\nIt works because it's specific, playful and easy to answer.",read:"Being left on read usually means **low momentum, not rejection**.\n\n1. Wait 2–3 days\n2. Send one light message that *doesn't* mention the silence\n3. If there's still no reply, let it go gracefully. Your energy is better spent on new matches.",date:"The best first dates are **short, specific and easy to extend**:\n\n• Coffee plus a walk somewhere scenic\n• A casual bar with games\n• A food market\n\nAnd always propose a plan: *\"Thursday 7pm at X?\"* beats *\"let's hang out sometime.\"*"};
+let chat=[{r:"a",t:"Hey Alex 👋 I'm your Spark coach. What's happening in your dating life right now?"}];
+function vCoach(){$("#view").innerHTML=head("AI Coach","Personal advice, trained on our coaching framework. Available 24/7.")+`
+  <div class="glass rounded-2xl flex flex-col h-[70vh]"><div id="msgs" class="flex-1 overflow-y-auto p-5 space-y-4"></div>
+  <div class="p-4 border-t border-white/5"><div class="flex flex-wrap gap-2 mb-3">${["How do I open on Hinge?","She left me on read","Plan a great first date"].map(q=>`<button onclick="ask('${q}')" class="text-xs px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15">${q}</button>`).join('')}</div>
+  <form onsubmit="event.preventDefault();ask(this.q.value);this.q.value=''" class="flex gap-2"><input name="q" autocomplete="off" placeholder="Ask your coach anything…" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-violet-500/50"><button class="grad rounded-xl px-4"><i data-lucide="send" class="w-4 h-4"></i></button></form></div></div>`;drawChat()}
+const md=t=>t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
+function drawChat(){const el=$("#msgs");if(!el)return;el.innerHTML=chat.map(m=>m.r=='u'?`<div class="flex justify-end"><div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-br-md bg-violet-600 text-sm">${m.t}</div></div>`:`<div class="flex gap-3"><span class="w-8 h-8 shrink-0 rounded-xl grad grid place-items-center"><i data-lucide="sparkles" class="w-4 h-4"></i></span><div class="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tl-md bg-white/[.06] text-sm leading-relaxed ${m.typing?'caret':''}">${md(m.t)}</div></div>`).join('');icons();el.scrollTop=el.scrollHeight}
+function ask(q){if(!q.trim())return;chat.push({r:'u',t:q.replace(/</g,'&lt;')});const l=q.toLowerCase();const full=l.includes('hinge')||l.includes('open')?COACH.hinge:l.includes('read')||l.includes('reply')?COACH.read:l.includes('date')?COACH.date:"Tell me a little more: where did you meet, and how long have you been talking? With that I can give you a **specific next step**, not generic advice.";const m={r:'a',t:'',typing:true};chat.push(m);drawChat();let i=0;const iv=setInterval(()=>{i+=3;m.t=full.slice(0,i);if(i>=full.length){m.typing=false;clearInterval(iv)}drawChat()},18)}
+
+/* ---------- History & Billing ---------- */
+function vHistory(){$("#view").innerHTML=head("History","Every analysis is saved so you can track progress.")+`<div class="glass rounded-2xl divide-y divide-white/5">${history.map(h=>`<div class="flex items-center gap-4 p-4"><span class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center"><i data-lucide="${h.t=='Profile'?'scan-face':'messages-square'}" class="w-4 h-4"></i></span><div class="flex-1"><div class="font-medium">${h.t} analysis</div><div class="text-xs text-zinc-500">${h.d}</div></div><div class="text-lg font-bold gradtext">${h.s}</div></div>`).join('')}</div>`}
+function vBilling(){$("#view").innerHTML=head("Billing","Choose the plan that fits. Cancel anytime.")+`<div id="plansApp" class="grid md:grid-cols-3 gap-4"></div>`;planCards($("#plansApp"),true)}
+function checkout(n,p){$("#coPlan").textContent=n;$("#coPrice").textContent=`$${p}.00 / month`;$("#checkout").hidden=false;icons()}
+function paid(){hide('checkout');pro=true;toast('🎉 Welcome to Pro. Unlimited analyses unlocked');$("#usage").parentNode.innerHTML='Unlimited analyses';go('billing')}
+icons();
+</script>
+</body>
+</html>
