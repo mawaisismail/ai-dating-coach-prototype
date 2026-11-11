@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Dating Coach: Prototype</title>
+<style>
+:root{--bg:#0f0d17;--card:#1a1626;--line:#2c2540;--txt:#f3effa;--mute:#a49cb8;--pink:#ff4f8b;--violet:#8b5cf6;--ok:#34d399}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#3b1d4f 0,transparent 60%),var(--bg);color:var(--txt);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;gap:12px;padding:14px 16px;max-width:1000px;margin:auto}
+.logo{font-weight:800;font-size:20px}.logo b{background:linear-gradient(90deg,var(--pink),var(--violet));-webkit-background-clip:text;color:transparent}
+.sp{flex:1}.pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#2a2140;color:var(--mute)}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:#2a2140;color:var(--txt)}
+.cta{background:linear-gradient(90deg,var(--pink),var(--violet));font-weight:700}
+main{max-width:1000px;margin:auto;padding:8px 16px 60px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}.tabs button.on{background:var(--txt);color:#120f1c;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--mute);cursor:pointer}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.thumbs img{width:80px;height:100px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.score{font-size:42px;font-weight:800}.bar{height:8px;background:#2a2140;border-radius:6px;overflow:hidden;margin:4px 0 10px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--violet))}
+ul{padding-left:18px;margin:6px 0}.mute{color:var(--mute);font-size:13px}
+.chat{height:380px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+.m{max-width:80%;padding:10px 12px;border-radius:14px}.u{align-self:flex-end;background:var(--violet)}.a{align-self:flex-start;background:#2a2140}
+.row{display:flex;gap:8px;margin-top:10px}input,textarea{flex:1;background:#120f1c;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font:inherit}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:760px){.plans{grid-template-columns:1fr}}
+.plan h3{margin:0}.price{font-size:30px;font-weight:800;margin:6px 0}.feat{border-color:var(--pink)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;place-items:center;z-index:9}.modal.on{display:grid}.modal .card{width:min(380px,92vw)}
+.note{font-size:12px;color:var(--mute);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:14px}
+.typing::after{content:'▍';animation:b 1s infinite}@keyframes b{50%{opacity:0}}
+</style></head><body>
+<header><div class="logo">Spark<b>Coach</b> AI</div><span class="pill" id="plan">Free plan · 3 analyses left</span><div class="sp"></div><button id="loginBtn" onclick="openLogin()">Log in</button><button class="cta" onclick="tab('pricing')">Upgrade</button></header>
+<main>
+<div class="note">Prototype: AI responses here are simulated sample outputs. In the real build each tool sends your existing prompts plus the user's images/text to OpenAI (GPT-4o vision) from a secure server, and accounts and subscriptions run on Stripe.</div>
+<div class="tabs"><button data-t="profile" class="on" onclick="tab('profile')">📸 Profile Analyzer</button><button data-t="convo" onclick="tab('convo')">💬 Conversation Analyzer</button><button data-t="coach" onclick="tab('coach')">🧠 AI Coach</button><button data-t="pricing" onclick="tab('pricing')">💳 Plans</button></div>
+
+<section id="profile" class="grid">
+ <div class="card"><h3>Upload your dating profile</h3><p class="mute">Photos + bio screenshots from Hinge, Tinder, Bumble…</p>
+ <label class="drop">Drop or tap to upload images<input type="file" accept="image/*" multiple hidden onchange="preview(this,'pThumbs')"></label><div class="thumbs" id="pThumbs"></div>
+ <div class="row"><button class="cta" style="flex:1" onclick="analyze('pOut',PROFILE)">Analyze my profile</button></div></div>
+ <div class="card" id="pOut"><p class="mute">Your personalised feedback will appear here.</p></div>
+</section>
+
+<section id="convo" class="grid" hidden>
+ <div class="card"><h3>Upload a conversation</h3><p class="mute">Screenshots of a chat you want help with.</p>
+ <label class="drop">Drop or tap to upload screenshots<input type="file" accept="image/*" multiple hidden onchange="preview(this,'cThumbs')"></label><div class="thumbs" id="cThumbs"></div>
+ <div class="row"><textarea id="ctx" rows="2" placeholder="Optional context: 'We matched 2 days ago, she stopped replying…'"></textarea></div>
+ <div class="row"><button class="cta" style="flex:1" onclick="analyze('cOut',CONVO)">Analyze conversation</button></div></div>
+ <div class="card" id="cOut"><p class="mute">Feedback and suggested replies will appear here.</p></div>
+</section>
+
+<section id="coach" class="card" hidden>
+ <h3 style="margin-top:0">Your AI dating coach</h3><div class="chat" id="chat"><div class="m a">Hey! I'm your coach, trained on our coaching framework. What's going on in your dating life right now?</div></div>
+ <div class="row"><input id="msg" placeholder="Ask anything: first-date ideas, how to text after a date…" onkeydown="if(event.key==='Enter')send()"><button class="cta" onclick="send()">Send</button></div>
+ <div class="row" style="flex-wrap:wrap"><button onclick="quick(this)">How do I open on Hinge?</button><button onclick="quick(this)">She left me on read</button><button onclick="quick(this)">Plan a great first date</button></div>
+</section>
+
+<section id="pricing" hidden><div class="plans">
+ <div class="card plan"><h3>Free</h3><div class="price">$0</div><ul><li>3 analyses</li><li>10 coach messages</li></ul><button disabled>Current plan</button></div>
+ <div class="card plan feat"><h3>Pro</h3><div class="price">$19<span class="mute">/mo</span></div><ul><li>Unlimited profile &amp; chat analyses</li><li>Unlimited AI coach</li><li>Saved history</li></ul><button class="cta" onclick="checkout('Pro')">Start Pro</button></div>
+ <div class="card plan"><h3>VIP</h3><div class="price">$49<span class="mute">/mo</span></div><ul><li>Everything in Pro</li><li>Priority responses</li><li>Monthly human coach review</li></ul><button onclick="checkout('VIP')">Go VIP</button></div>
+</div><p class="mute">Real build: Stripe Checkout and Customer Portal, with webhooks to activate, renew and cancel plans and enforce usage limits.</p></section>
+</main>
+
+<div class="modal" id="login"><div class="card"><h3 style="margin-top:0">Log in</h3><div style="display:grid;gap:8px"><input id="em" placeholder="Email"><input type="password" placeholder="Password"><button class="cta" onclick="doLogin()">Continue</button><button onclick="doLogin()">Continue with Google</button></div><p class="mute">Prototype: any email works.</p></div></div>
+
+<script>
+const PROFILE={score:72,title:"Profile score",sections:[["What's working",["Photo 2 (outdoor, natural smile) is your strongest. Lead with it","Bio shows humour and a specific interest (hiking)"]],["Fix these first",["Photo 1 is a group shot, so it's unclear who you are. Move it to slot 4","No full-body photo. Add one in natural light","Bio ends without a hook. Give matches an easy opener"]],["Rewrite suggestion",["\"Weekend hiker, weekday taco critic. Tell me your most controversial food opinion 🌮\""]]]};
+const CONVO={score:58,title:"Conversation health",sections:[["What happened",["Your last 3 messages were questions in a row, which feels like an interview","Energy dropped after the 'what do you do' exchange"]],["Suggested replies",["\"Okay, I need a ruling: is pineapple on pizza a red flag or a green flag? 🍍\"","\"You mentioned the Lisbon trip. What's the one place I absolutely have to go?\""]],["Next step",["Suggest a specific plan within the next 2–3 messages: 'Coffee Thursday at 6?'"]]]};
+function tab(t){document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!==t);document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
+function preview(inp,id){const el=document.getElementById(id);el.innerHTML='';[...inp.files].slice(0,6).forEach(f=>{const i=new Image();i.src=URL.createObjectURL(f);el.appendChild(i)})}
+let left=3;function analyze(id,R){const o=document.getElementById(id);if(left<=0){tab('pricing');return}left--;document.getElementById('plan').textContent=`Free plan · ${left} analyses left`;o.innerHTML='<p class="typing mute">Analyzing with your coaching prompts</p>';setTimeout(()=>{o.innerHTML=`<div class="mute">${R.title}</div><div class="score">${R.score}<span class="mute">/100</span></div><div class="bar"><i style="width:${R.score}%"></i></div>`+R.sections.map(([h,l])=>`<b>${h}</b><ul>${l.map(x=>`<li>${x}</li>`).join('')}</ul>`).join('')},1400)}
+const ANS={"hinge":"On Hinge, comment on a specific prompt or photo detail instead of just liking. Example: 'Okay, your hot take on brunch is wrong and I can prove it 😄'. Specific beats generic every time.","read":"Being left on read usually means low momentum, not rejection. Wait 2–3 days, then send one light, playful message that doesn't reference the silence. If there's no reply, let it go gracefully.","date":"Pick something short, specific and easy to extend: coffee plus a walk, or a casual bar with games. Propose a day and time ('Thursday 7pm at X?') instead of 'let's hang out sometime'."};
+function reply(q){q=q.toLowerCase();return q.includes('hinge')||q.includes('open')?ANS.hinge:q.includes('read')||q.includes('reply')?ANS.read:q.includes('date')?ANS.date:"Great question. In the real app I'd answer using your coaching framework. Tell me a bit more about the situation (where you met, how long you've been talking) and I'll give you a specific next step."}
+function send(){const i=document.getElementById('msg'),c=document.getElementById('chat');if(!i.value.trim())return;c.insertAdjacentHTML('beforeend',`<div class="m u">${i.value.replace(/</g,'&lt;')}</div>`);const q=i.value;i.value='';const a=document.createElement('div');a.className='m a typing';c.appendChild(a);c.scrollTop=1e9;setTimeout(()=>{a.className='m a';a.textContent=reply(q);c.scrollTop=1e9},900)}
+function quick(b){document.getElementById('msg').value=b.textContent;send()}
+function openLogin(){document.getElementById('login').classList.add('on')}
+function doLogin(){const e=document.getElementById('em').value||'demo@user.com';document.getElementById('login').classList.remove('on');document.getElementById('loginBtn').textContent=e.split('@')[0]}
+function checkout(p){alert(`Prototype: this opens Stripe Checkout for the ${p} plan. After payment, a webhook unlocks unlimited usage.`)}
+document.getElementById('login').onclick=e=>{if(e.target.id==='login')e.target.classList.remove('on')}
+</script></body></html>
